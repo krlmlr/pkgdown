@@ -4,7 +4,9 @@
 \alias{test-links}
 \title{Test case: links}
 \description{
-Test case: links
+\if{html}{\out{<div class="r">}}\preformatted{magrittr::subtract(10, 1)
+}\if{html}{\out{</div>}}\preformatted{## [1] 9
+}
 }
 \examples{
 magrittr::subtract(10, 1)
@@ -14,6 +16,7 @@ subtract(10, 1)
 }
 \seealso{
 Other tests: 
+\code{\link{index}},
 \code{\link{test-crayon}},
 \code{\link{test-dont}},
 \code{\link{test-figures}},

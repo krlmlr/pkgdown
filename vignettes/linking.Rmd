@@ -1,8 +1,11 @@
 ---
 title: "Auto-linking"
 output: rmarkdown::html_vignette
+description: >
+  Learn how pkgdown's automatic linking works, and how you can 
+  customise it.
 vignette: >
-  %\VignetteIndexEntry{Linking between pkgdown sites}
+  %\VignetteIndexEntry{Auto-linking}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -20,7 +23,8 @@ pkgdown will automatically link to documentation and articles wherever it's poss
 
 * Bare function calls, like `build_site()`.
 * Calls to `?`, like `?build_site` or `package?pkgdown`.
-* Calls to `vignette()`, like `vignette("pkgdown")`
+* Calls to `help()`, like `help("pkgdown")`.
+* Calls to `vignette()`, like `vignette("pkgdown")`.
 
 ## Across packages
 

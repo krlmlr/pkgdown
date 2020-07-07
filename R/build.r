@@ -150,25 +150,26 @@
 #' The following YAML snippet illustrates some of the most important features.
 #'
 #' ```
-#' components:
-#'   home: ~
-#'   articles:
-#'     text: Articles
-#'     menu:
-#'     - text: Category A
-#'     - text: Title A1
-#'       href: articles/a1.html
-#'     - text: Title A2
-#'       href: articles/a2.html
-#'     - text: -------
-#'     - text: "Category B"
-#'     - text: Title B1
-#'       menu:
-#'       - text "Sub-category B11"
-#'         href: articles/b11.html
-#'    twitter:
-#'      icon: "fab fa-twitter fa-lg"
-#'      href: http://twitter.com/hadleywickham
+#' navbar:
+#'   components:
+#'     home: ~
+#'     articles:
+#'      text: Articles
+#'      menu:
+#'      - text: Category A
+#'      - text: Title A1
+#'        href: articles/a1.html
+#'      - text: Title A2
+#'        href: articles/a2.html
+#'      - text: -------
+#'      - text: "Category B"
+#'      - text: Title B1
+#'        menu:
+#'        - text "Sub-category B11"
+#'          href: articles/b11.html
+#'      twitter:
+#'        icon: "fab fa-twitter fa-lg"
+#'        href: http://twitter.com/hadleywickham
 #' ```
 #'
 #' Components can contain sub-`menu`s with headings (indicated by missing
@@ -259,6 +260,38 @@
 #' These settings are currently recommended for advanced users only. There
 #' is little documentation, and you'll need to read the existing source
 #' for pkgdown templates to ensure that you use the correct components.
+#'
+#' @section YAML config - repo:
+#' pkgdown automatically generates links to the source repository in a few
+#' places
+#'
+#' * Articles and documentation topics are linked back to the
+#'   underlying source file.
+#'
+#' * The NEWS automatically links issue numbers and user names.
+#'
+#' * The homepage provides a link to  "Browse source code"
+#'
+#' pkgdown automatically figures out the necessary URLs if you link to a GitHub
+#' or GitLab repo in your `BugReports` or `URL` field. Otherwise, you can
+#' supply your own in the `repo` component:
+#'
+#' ```yaml
+#' repo:
+#'   url:
+#'     home: https://github.com/r-lib/pkgdown/
+#'     source: https://github.com/r-lib/pkgdown/blob/master/
+#'     issue: https://github.com/r-lib/pkgdown/issues/
+#'     user: https://github.com/
+#' ```
+#'
+#' * `home`: path to package home on source code repository.
+#' * `source:`: path to source of individual file in master branch.
+#' * `issue`: path to individual issue.
+#' * `user`: path to user.
+#'
+#' The varying components (e.g. path, issue number, user name) are pasted on
+#' the end of these URLs so they should have trailing `/`s.
 #'
 #' @section Options:
 #' Users with limited internet connectivity can disable CRAN checks by setting

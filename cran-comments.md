@@ -9,4 +9,4 @@
 
 ## revdepcheck results
 
-This is a fix for a CRAN check failure. I did not check revdeps.
+This release includes a handful of small bug fixes so I did not check reverse dependencies.

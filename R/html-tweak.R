@@ -94,97 +94,11 @@ prepend_class <- function(x, class = "table") {
   }
 }
 
-# Autolinking -------------------------------------------------------------
-
-# Assumes generated with rmarkdown (i.e. knitr + pandoc)
-tweak_code <- function(x) {
-  stopifnot(inherits(x, "xml_node"))
-
-  # <pre class="sourceCode r">
-  x %>%
-    xml2::xml_find_all(".//pre[contains(@class, 'r')]") %>%
-    purrr::map(tweak_pre_node)
-
-  # Identify <code> with no children (just text), and are not ancestors of a
-  # header
-  x %>%
-    xml2::xml_find_all(
-      paste0(
-        ".//code[count(*) = 0 and ",
-        "not(ancestor::h1|ancestor::h2|ancestor::h3|ancestor::h4|ancestor::h5) and ",
-        "not(ancestor::div[contains(@id, 'tocnav')])]"
-      )
-    ) %>%
-    tweak_code_nodeset()
-
-  invisible()
-}
-
-tweak_code_nodeset <- function(nodes, ...) {
-  text <- nodes %>% xml2::xml_text()
-  href <- text %>% purrr::map_chr(href_string, ...)
-
-  has_link <- !is.na(href)
-
-  nodes[has_link] %>%
-    xml2::xml_contents() %>%
-    xml2::xml_replace("a", href = href[has_link], text[has_link])
-
-  invisible()
-}
-
-# Process in order, because attaching a package affects later code chunks
-tweak_pre_node <- function(node, ...) {
-  # Register attached packages
-  text <- node %>% xml2::xml_text()
-  expr <- tryCatch(parse(text = text), error = function(e) NULL)
-  packages <- extract_package_attach(expr)
-  register_attached_packages(packages)
-
-  # Find nodes with class kw and look backward to see if its qualified
-  span <- node %>% xml2::xml_find_all(".//span[@class = 'kw']")
-  pkg <- span %>% purrr::map_chr(find_qualifier)
-  has_pkg <- !is.na(pkg)
-
-  # Extract text and link
-  text <- span %>% xml2::xml_text()
-  href <- rep_along(text, na_chr)
-  href[has_pkg] <- purrr::map2_chr(text[has_pkg], pkg[has_pkg], href_topic_remote)
-  href[!has_pkg] <- purrr::map_chr(text[!has_pkg], href_topic_local)
-
-  has_link <- !is.na(href)
-
-  span[has_link] %>%
-    xml2::xml_contents() %>%
-    xml2::xml_replace("a", href = href[has_link], text[has_link])
-
-  invisible()
-}
-
-find_qualifier <- function(node) {
-  prev <- rev(xml2::xml_find_all(node, "./preceding-sibling::node()"))
-  if (length(prev) < 2) {
-    return(NA_character_)
-  }
-
-  colons <- prev[[1]]
-  if (xml2::xml_name(colons) != "span" || xml2::xml_text(colons) != "::") {
-    return(NA_character_)
-  }
-
-  qual <- prev[[2]]
-  if (xml2::xml_name(qual) != "text") {
-    return(NA_character_)
-  }
-
-  rematch2::re_match(xml2::xml_text(qual), "([[:alnum:]]+)$")[[".match"]]
-}
-
 # File level tweaks --------------------------------------------
 
 tweak_rmarkdown_html <- function(html, input_path) {
-  # Automatically link funtion mentions
-  tweak_code(html)
+  # Automatically link function mentions
+  downlit::downlit_html_node(html)
   tweak_anchors(html, only_contents = FALSE)
   tweak_md_links(html)
 
@@ -251,17 +165,24 @@ tweak_homepage_html <- function(html, strip_header = FALSE) {
 
 # Mutates `html`, removing the badge container
 badges_extract <- function(html) {
-  # First try specially named div;
+  # First try specially named element;
   x <- xml2::xml_find_first(html, "//div[@id='badges']")
+  strict <- FALSE
 
   # then try usethis-readme-like paragraph;
   if (length(x) == 0) {
-    x <- xml2::xml_find_all(html, ".//*/comment()[contains(., 'badges: start')]/following-sibling::p[1]")
+    # Find start comment, then all elements after
+    # which are followed by the end comment.
+    x <- xml2::xml_find_all(html, "
+      //comment()[contains(., 'badges: start')][1]
+      /following-sibling::*[following-sibling::comment()[contains(., 'badges: end')]]
+    ")
   }
 
   # finally try first paragraph
   if (length(x) == 0) {
     x <- xml2::xml_find_first(html, "//p")
+    strict <- TRUE
   }
 
   # No paragraph
@@ -269,17 +190,15 @@ badges_extract <- function(html) {
     return(character())
   }
 
-  # No non-whitespace characters outside of tags
-  if (xml2::xml_text(x, trim = TRUE) != "") {
+  # If we guessed the element,
+  # we only proceed if there is no text
+  if (strict && any(xml2::xml_text(x, trim = TRUE) != "")) {
     return(character())
   }
 
-  badges <- xml2::xml_children(x)
+  # Proceed if we find image-containing links
+  badges <- xml2::xml_find_all(x, ".//a[img]")
   if (length(badges) == 0) {
-    return(character())
-  }
-
-  if (!all(xml2::xml_name(badges) %in% "a")) {
     return(character())
   }
 
@@ -301,4 +220,3 @@ update_html <- function(path, tweak, ...) {
   xml2::write_html(html, path, format = FALSE)
   path
 }
-

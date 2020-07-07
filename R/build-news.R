@@ -49,8 +49,16 @@
 #'
 #' ```
 #' news:
-#' - one_page: false
+#'   one_page: false
 #' ```
+#'
+#' Suppress the default addition of CRAN release dates with:
+#'
+#' ```
+#' news:
+#'   cran_dates: false
+#' ```
+#'
 #' @seealso [Tidyverse style for News](http://style.tidyverse.org/news.html)
 #'
 #' @inheritParams build_articles
@@ -59,20 +67,16 @@ build_news <- function(pkg = ".",
                        override = list(),
                        preview = NA) {
   pkg <- section_init(pkg, depth = 1L, override = override)
-
-  one_page <- purrr::pluck(pkg, "meta", "news", 1, "one_page", .default = TRUE)
-
   if (!has_news(pkg$src_path))
     return()
 
   rule("Building news")
   dir_create(path(pkg$dst_path, "news"))
 
-  if (one_page) {
-    build_news_single(pkg)
-  } else {
-    build_news_multi(pkg)
-  }
+  switch(news_style(pkg$meta),
+    single = build_news_single(pkg),
+    multi = build_news_multi(pkg)
+  )
 
   preview_site(pkg, "news", preview = preview)
 }
@@ -86,7 +90,7 @@ build_news_single <- function(pkg) {
     list(
       contents = purrr::transpose(news),
       pagetitle = "Changelog",
-      source = github_source_links(pkg$github_url, "NEWS.md")
+      source = repo_source(pkg, "NEWS.md")
     ),
     path("news", "index.html")
   )
@@ -128,12 +132,12 @@ globalVariables(".")
 
 data_news <- function(pkg = ".") {
   pkg <- as_pkgdown(pkg)
-  scoped_file_context(depth = 1L)
 
   html <- markdown(path(pkg$src_path, "NEWS.md"))
+  xml <- xml2::read_html(html)
+  downlit::downlit_html_node(xml)
 
-  sections <- xml2::read_html(html) %>%
-    xml2::xml_find_all("./body/div")
+  sections <- xml2::xml_find_all(xml, "./body/div")
 
   titles <- sections %>%
     xml2::xml_find_first(".//h1|h2") %>%
@@ -149,12 +153,17 @@ data_news <- function(pkg = ".") {
   anchors <- anchors[!is.na(versions)]
   versions <- versions[!is.na(versions)]
 
-  timeline <- pkg_timeline(pkg$package)
+  show_dates <- purrr::pluck(pkg, "meta", "news", "cran_dates", .default = TRUE)
+  if (show_dates) {
+    timeline <- pkg_timeline(pkg$package)
+  } else {
+    timeline <- NULL
+  }
+
   html <- sections %>%
-    purrr::walk(tweak_code) %>%
     purrr::walk2(versions, tweak_news_heading, timeline = timeline) %>%
     purrr::map_chr(as.character) %>%
-    purrr::map_chr(add_github_links, pkg = pkg)
+    purrr::map_chr(repo_auto_link, pkg = pkg)
 
   news <- tibble::tibble(
     version = versions,
@@ -223,7 +232,7 @@ pkg_timeline <- function(package) {
 
   url <- paste0("https://crandb.r-pkg.org/", package, "/all")
 
-  resp <- httr::GET(url)
+  resp <- httr::RETRY("GET", url, quiet = TRUE)
   if (httr::http_error(resp)) {
     return(NULL)
   }
@@ -243,6 +252,10 @@ tweak_news_heading <- function(x, versions, timeline) {
     xml2::xml_find_all(".//h1") %>%
     xml2::xml_set_attr("class", "page-header")
 
+  x %>%
+    xml2::xml_find_all(".//h1") %>%
+    xml2::xml_set_attr("data-toc-text", versions)
+
   if (is.null(timeline))
     return(x)
 
@@ -258,4 +271,12 @@ tweak_news_heading <- function(x, versions, timeline) {
     xml2::xml_add_child(date_nodes, .where = 1)
 
   invisible()
+}
+
+news_style <- function(meta) {
+  one_page <- purrr::pluck(meta, "news", "one_page") %||%
+    purrr::pluck(meta, "news", 1, "one_page") %||%
+    TRUE
+
+  if (one_page) "single" else "multi"
 }

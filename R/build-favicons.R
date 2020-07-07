@@ -57,9 +57,12 @@ build_favicons <- function(pkg = ".", overwrite = FALSE) {
     )
   )
 
-  resp <- httr::POST(
+  resp <- httr::RETRY(
+    "POST",
     "https://realfavicongenerator.net/api/favicon",
-    body = json_request, encode = "json",
+    body = json_request,
+    encode = "json",
+    quiet = TRUE
   )
   if (httr::http_error(resp)) {
     stop("API request failed.", call. = FALSE)
@@ -78,7 +81,12 @@ build_favicons <- function(pkg = ".", overwrite = FALSE) {
 
   tmp <- tempfile()
   on.exit(unlink(tmp))
-  result <- httr::GET(result$favicon$package_url, httr::write_disk(tmp))
+  result <- httr::RETRY(
+    "GET",
+    result$favicon$package_url,
+    httr::write_disk(tmp),
+    quiet = TRUE
+  )
 
   tryCatch({
     utils::unzip(tmp, exdir = path(pkg$src_path, "pkgdown", "favicon"))

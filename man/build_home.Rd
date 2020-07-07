@@ -19,24 +19,36 @@ freshly generated section in browser.}
 pandoc. This is useful when debugging.}
 }
 \description{
-This function generates the home page, and converts other \code{.md} files
-typically found in the package root and in \verb{.github/}. It generates the home
-page from  \code{index.md} or \code{README.md}, falling back to the description field
-in \code{DESCRIPTION} if neither is found. It also builds an authors page
-from the \code{DESCRIPTION} and \code{inst/CITATION} (if present) and
-a license page, and converts any \code{.md} files found in
+This function generates the home page, converts \code{.md} files found in the
+package root (and in \verb{.github/}), and builds an authors page from
+\code{DESCRIPTION} and \code{inst/CITATION} (if present).
 }
+\section{Home page}{
+
+The home page (\code{index.html}) is generated from \verb{_pkgdown/index.md},
+\code{index.md}, or \code{README.md}, in that order. Most packages will use \code{README.md}
+because that's also displayed by GitHub and CRAN. Use \code{index.md} if you want
+your package website to look different to your README, and use
+\verb{_pkgdown/index.md} if you don't want that file to live in your package
+root directory.
+
+If you use \code{index.Rmd} or \code{README.Rmd} it's your responsibility to knit
+the document to create the corresponding \code{.md}. pkgdown does not do this
+for you because it only touches files in the \verb{doc/} directory.
+}
+
 \section{Sidebar}{
 
 The sidebar is automatically populated with:
 \itemize{
 \item Development status badges found in \code{README.md}/\code{index.md}. pkgdown
-identifies badge paragraphs in two ways:
+identifies badges in three ways:
 \itemize{
-\item A paragraph starting with \verb{<!-- badges: start -->} and ending with
-\verb{<!-- badges: end -->} as created by \code{usethis::use_readme_md()}. or
-\code{usethis::use_readme_rmd()}.
-\item The first paragraph, if it only contains images.
+\item Any image-containing links between \verb{<!-- badges: start -->} and
+\verb{<!-- badges: end -->}, as e.g. created by \code{usethis::use_readme_md()}
+or \code{usethis::use_readme_rmd()}.
+\item Any image-containing links within \verb{<div id="badges"></div>}.
+\item Within the first paragraph, if it only contains image-containing links.
 }
 \item A link for bug reports is added if the \code{BugReports} field in
 \code{DESCRIPTION} contains a link. You can use \code{usethis::use_github_links()}

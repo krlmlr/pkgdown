@@ -1,17 +1,11 @@
 build_home_index <- function(pkg = ".", quiet = TRUE) {
   pkg <- as_pkgdown(pkg)
 
-  scoped_package_context(pkg$package, pkg$topic_index, pkg$article_index)
-  scoped_file_context(depth = 0L)
-
   src_path <- path_first_existing(
     pkg$src_path,
     c("pkgdown/index.md",
-      "pkgdown/index.Rmd",
       "index.md",
-      "README.md",
-      "index.Rmd",
-      "README.Rmd"
+      "README.md"
     )
   )
   dst_path <- path(pkg$dst_path, "index.html")
@@ -20,9 +14,10 @@ build_home_index <- function(pkg = ".", quiet = TRUE) {
   if (is.null(src_path)) {
     data$index <- linkify(pkg$desc$get("Description")[[1]])
   } else {
+    local_options_link(pkg, depth = 0L)
     data$index <- markdown(src_path)
   }
-  render_page(pkg, "home", data, "index.html")
+  render_page(pkg, "home", data, "index.html", quiet = quiet)
 
   strip_header <- isTRUE(pkg$meta$home$strip_header)
   update_html(dst_path, tweak_homepage_html, strip_header = strip_header)
@@ -60,12 +55,12 @@ data_home_sidebar <- function(pkg = ".") {
 data_home_sidebar_links <- function(pkg = ".") {
   pkg <- as_pkgdown(pkg)
 
-  repo <- repo_link(pkg$package)
+  repo <- cran_link(pkg$package)
   meta <- purrr::pluck(pkg, "meta", "home", "links")
 
   links <- c(
     link_url(paste0("Download from ", repo$repo), repo$url),
-    link_url("Browse source code", pkg$github_url),
+    link_url("Browse source code", repo_home(pkg)),
     if (pkg$desc$has_fields("BugReports"))
       link_url("Report a bug", pkg$desc$get("BugReports")[[1]]),
     purrr::map_chr(meta, ~ link_url(.$text, .$href))
@@ -88,7 +83,10 @@ sidebar_section <- function(heading, bullets, class = make_slug(heading)) {
   )
 }
 
-repo_link <- memoise(function(pkg) {
+#' @importFrom memoise memoise
+NULL
+
+cran_link <- memoise(function(pkg) {
   if (!has_internet()) {
     return(NULL)
   }
@@ -101,7 +99,7 @@ repo_link <- memoise(function(pkg) {
 
   # bioconductor always returns a 200 status, redirecting to /removed-packages/
   bioc_url <- paste0("https://www.bioconductor.org/packages/", pkg)
-  req <- httr::HEAD(bioc_url)
+  req <- httr::RETRY("HEAD", bioc_url, quiet = TRUE)
   if (!httr::http_error(req) && !grepl("removed-packages", req$url)) {
     return(list(repo = "BIOC", url = bioc_url))
   }

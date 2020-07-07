@@ -3,7 +3,7 @@ markdown <- function(path = NULL, ..., strip_header = FALSE) {
   on.exit(file_delete(tmp), add = TRUE)
 
   if (rmarkdown::pandoc_available("2.0")) {
-    from <- "markdown_github-hard_line_breaks+smart+auto_identifiers+tex_math_dollars+tex_math_single_backslash"
+    from <- "markdown_github-hard_line_breaks+smart+auto_identifiers+tex_math_dollars+tex_math_single_backslash+markdown_in_html_blocks"
   } else if (rmarkdown::pandoc_available("1.12.3")) {
     from <- "markdown_github-hard_line_breaks+tex_math_dollars+tex_math_single_backslash"
   } else {
@@ -27,7 +27,7 @@ markdown <- function(path = NULL, ..., strip_header = FALSE) {
   xml <- xml2::read_html(tmp, encoding = "UTF-8")
 
   if (!inherits(xml, "xml_node")) {
-    stop(src_path(path), " must be non-empty", call. = FALSE)
+    return("")
   }
 
   # Capture heading, and optional remove
@@ -37,7 +37,7 @@ markdown <- function(path = NULL, ..., strip_header = FALSE) {
     xml2::xml_remove(h1)
   }
 
-  tweak_code(xml)
+  downlit::downlit_html_node(xml)
   tweak_md_links(xml)
   tweak_anchors(xml, only_contents = FALSE)
 
@@ -58,8 +58,10 @@ markdown <- function(path = NULL, ..., strip_header = FALSE) {
 }
 
 markdown_text <- function(text, ...) {
-  if (is.null(text))
-    return(text)
+  if (identical(text, NA_character_) || is.null(text)) {
+    return(NULL)
+  }
+
 
   tmp <- tempfile()
   on.exit(unlink(tmp), add = TRUE)

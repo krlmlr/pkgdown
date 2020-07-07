@@ -1,18 +1,204 @@
 # pkgdown (development version)
 
-* add support for navbar submenus: you can create submenus following the convention established in [rstudio/rmarkdown#721](https://github.com/rstudio/rmarkdown/issues/721) (@ijlyttle, @wendtke, #1213)
+* pkgdown now uses the new downlit package for all syntax highlighting and 
+  autolinking (in both reference topics and vignettes). There should be very
+  little change in behaviour because the code in downlit was extracted from
+  pkgdown, but this makes it easier to use pkgdown's nice linking/highlighting
+  in more places (#1234).
+
+* `autolink_html()` is (soft) deprecated. Please use 
+  `downlit::downlit_html_path()` instead.
+
+* Suppressing CRAN dates in news file now actualy works.
+
+* All HTTP requests are now retried upon failure (@jameslamb, #1305).
+
+* Highlighting of empty expressions was restored (#1310).
+
+* `\preformatted{}` no longer double escapes its contents (#1311).
+
+* Setting `clean = TRUE` in `deploy_site_github()` removes old files from the deployed site before building a new one (#1297).
+
+# pkgdown 1.5.1
+
+* Syntax highlighting works on Windows once more (#1282).
+
+* pkgdown no longer fails if your `.Rd` files have duplicated `\aliases` 
+  as were produced by an older version of roxygen2 (#1290).
+
+* Rendering empty `.md` file now returns empty string (#1285).
+
+* `build_articles_index()` is now exported to rapidly rebuild the index (#1281)
+
+* `deploy_site_github()` now accepts a `host` argument to specify alternate 
+  hosts (e.g., Github enterprise) (@dimagor, #1165) and once again works as 
+  intended on Travis-CI (@jimhester, #1276).
+
+# pkgdown 1.5.0
+
+## New features
+
+* The articles index page and navbar have been overhauled. There are two
+  major new features in this release:
+  
+    * The articles index page now displays article `description`s,
+      taken from YAML metadata belonging to each article. This lets you provide 
+      more context about each article and describe why one might want to read 
+      it (#1227).
+      
+    * The articles navbar is now also controlled by the `articles` section
+      in `_pkgdown.yml`. The ordering of the sections, and articles within
+      them, control the order of the articles in the navbar, and you can
+      use the new `navbar` field to control whether or not each section
+      appears in the navbar (#1101, #1146).
+
+* The reference index now has two levels of heading hierarchy: `title` and
+  `subtitle` (#327).
+
+* Tables of contents in sidebars now use
+  [bootstrap-toc](https://afeld.github.io/bootstrap-toc/); this considerably
+  improves navigation for long articles and reference pages.
+
+* You can now control the links to source files (in reference pages and 
+  articles) and issues and users (in the NEWS) with new `repo$url` config
+  option (#1238). This makes it easier to use pkgdown with GitHub enterprise,
+  packages in subdirectories, and other source hosts (like bitbucket).
+  
+    ```yaml
+    repo:
+      url:
+        home: https://github.com/r-lib/pkgdown/
+        source: https://github.com/r-lib/pkgdown/blob/master/
+        issue: https://github.com/r-lib/pkgdown/issues/
+        user: https://github.com/
+    ```
+    
+    The individual components (e.g. path, issue number, username) are pasted on 
+    the end of these urls so they should have trailing `/`s.
+
+    You don't need to set these links for GitLab, as pkgdown now detects 
+    GitLab urls automatically (since they use the same structure as GitHub)
+    (#1045). 
+
+* There's much richer control over Open Graph and Twitter metadata for the 
+  whote site and for individual articles. See new `vignette("metadata")` for 
+  details (@gadenbuie, #936).
+
+* New `deploy_to_branch()` function to build and deploy a site to a branch,
+  defaulting to `gh-pages` for use with GitHub Pages. This is used in our 
+  recommended GitHub action workflow for automatically building and deploying
+  pkgdown sites for packages on GitHub (@jimhester, #1221).
+
+* Updated JS libraries: jquery 3.3.1 -> 3.4.1; bootswatch 3.3.7 -> 3.4.0;
+  bootstrap 3.3.7 -> bootstrap 3.4.1; docsearch 2.6.1 -> 2.6.3;
+  fontawesome 5.11.1 -> 5.12.1; headroom.js 0.9.44 -> 0.11.0; 
+  clipboard.js 2.0.4 -> 2.0.6 (@jayhesselberth).
+
+## Auto-linking improvements
+
+* Examples and Rmd now use exactly the same syntax highlighting strategy.
+
+* In examples and Rmd, calls of the form `current_package::foo` now get
+  a local link (#1262).
+
+* `\preformatted{}` blocks are now highlighted and linked if they parse
+  as R code (#1180).
+
+* `library(pkgdown)` is now automatically linked to the reference index for 
+  "pkgdown" not the documentation for `library()` (#1161).
+
+* `help("topic")` is now automatically linked to the documentation for "topic",
+  not to the documentation for `help()` (#1210)
+
+## Minor improvements and bug fixes
+
+### Articles
+
+* `build_home()` no longer uses (unrendered) `README.Rmd` or `index.Rmd` if
+  corresponding `.md` files are not found.
+
+* `build_article()` failures now print more information to help you debug
+  the problem (#952).
+
+* The name of the vignette mapped to the "Get started" entry in the navbar 
+  is now more flexible. You can use an article (e.g `articles/{pkgname}`) 
+  and if your package has a `.` in its name you can replace it with `-` to 
+  generate a valid article name (e.g. the get started vignette for 
+  `pack.down` would be `pack-down`) (#1166).
+
+### Deployment
+
+* `deploy_to_branch()` now correctly captures the commit SHA on GitHub Actions
+  (@coatless, #1252).
+
+* `deploy_to_branch(github_pages = TRUE)` generates a `.nojekyll` to prevent
+  jekyll ever executing (#1242).
+
+* `CNAME` is no longer generated by `init_site()`, but is instead conditionally 
+  by `deploy_to_branch()` when `github_pages = TRUE`. This is a better a fit 
+  because the `CNAME` file is only needed by GitHub pages (#969).
+
+* `deploy_site_github()` argument `repo_slug` has been deprecated and is no
+  longer needed or used. (@jimhester, #1221)
+
+### News 
+See additional details in `?build_news`:
+    
+* You can optionally suppress the CRAN release dates added to the news 
+  page (#1118).
+
+* Multi-page news style gets a better yaml specification (the old style 
+  will continue to work so no need to change existing YAML).
+
+### Reference
+
+* A topic named `index` will not longer clobber the reference index (#1110).
+
+* Topic names/aliases on reference index are now escaped (#1216). 
+
+* `build_reference()` gives better warnings if your `_pkgdown.yml` is
+  constructed incorrectly (#1025).
+
+* New `has_keyword()` topic selector for `reference`. `has_keyword("datasets")`
+  is particularly useful for selecting all data documentation (#760).
+
+* New `lacks_concepts()` can select topics that do not contain any of 
+  a number of specified concepts. (@mikldk, #1232)
+
+### Home, authors, and citation
+ 
+* pkgdown now escapes html and linkifies links in comments in author info 
+  from DESCRIPTION (@maelle, #1204)
 
 * pkgdown now uses the ORCiD logo included in Font Awesome 5.11 instead of 
   querying it from members.orcid.org (@bisaloo, #1153)
 
-* `build_home()` now looks for `pkgdown/index.md` and `pkgdown/index.Rmd` in
-addition to the top-level `index` or `README` files (@nteetor, #1184)
+* badges are now extracted from everything between `<!--badges: start-->`
+  and `<!--badges: end-->`. They used to be extracted only if they were
+  direct children of the first `<p>` after `<!--badges: start-->`.
 
-* New `deploy_to_branch()` function to build and deploy a site to a branch,
-  defaulting to `gh-pages` to use with GitHub Pages. (@jimhester, #1221)
+* `build_home()` now looks for `pkgdown/index.md` in addition to the top-level 
+  `index` or `README` files (@nteetor, #1031)
 
-* `deploy_site_github()` argument `repo_slug` has been deprecated and is no
-  longer needed or used. (@jimhester, #1221)
+### Navbar
+
+* pkgdown now formats the package version displayed in the navbar the same way
+  as it has been specified in the DESCRIPTION file. In particular, version
+  separators (e.g. `.` and `-`) are preserved. (#1170, @kevinushey)
+
+* add support for navbar submenus: you can create submenus following the 
+  convention established in [rstudio/rmarkdown#721](https://github.com/rstudio/rmarkdown/issues/721) (@ijlyttle, @wendtke, #1213)
+
+### Other
+
+* Updated JS libraries: jquery 3.3.1 -> 3.4.1; bootswatch 3.3.7 -> 3.4.0;
+  bootstrap 3.3.7 -> bootstrap 3.4.1; docsearch 2.6.1 -> 2.6.3 
+  (@jayhesselberth).
+
+* Markdown conversion now explicitly allows markdown inside of HTML blocks;
+  this was previously accidentally disabled (#1220).
+
+* A timestamp for the last site build is reported in `pkgdown.yml` (#1122).
 
 # pkgdown 1.4.1
 
@@ -39,9 +225,9 @@ addition to the top-level `index` or `README` files (@nteetor, #1184)
     library, and runs examples/articles in a new process.
 
 * `build_reference()` no longer runs `devtools::document()` (#1079) and
-  `build_home()` no longer re-builds `README.Rmd`.  This makes the scope 
-  of responsibility of pkgdown more clear: it now only creates/modifies 
-  files in `doc/`.
+  `build_home()` no longer re-builds `README.Rmd` or `index.Rmd`. This makes 
+  the scope of responsibility of pkgdown more clear: it now only 
+  creates/modifies files in `doc/`.
 
 * `build_home()` now strips quotes from `Title` and `Description` fields 
   when generating page metadata. Additionally, you can now override the 
