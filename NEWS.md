@@ -1,5 +1,7 @@
 # pkgdown (development version)
 
+* HTML is automatically stripped from the page title (#1318).
+
 * pkgdown now uses the new downlit package for all syntax highlighting and 
   autolinking (in both reference topics and vignettes). There should be very
   little change in behaviour because the code in downlit was extracted from
@@ -9,7 +11,7 @@
 * `autolink_html()` is (soft) deprecated. Please use 
   `downlit::downlit_html_path()` instead.
 
-* Suppressing CRAN dates in news file now actualy works.
+* Suppressing CRAN dates in news file now actually works.
 
 * All HTTP requests are now retried upon failure (@jameslamb, #1305).
 
@@ -17,7 +19,8 @@
 
 * `\preformatted{}` no longer double escapes its contents (#1311).
 
-* Setting `clean = TRUE` in `deploy_site_github()` removes old files from the deployed site before building a new one (#1297).
+* Setting `clean = TRUE` in `deploy_site_github()` removes old files from the 
+  deployed site before building a new one (#1297).
 
 # pkgdown 1.5.1
 
